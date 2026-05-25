@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#2f9e6e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="우리집 식자재">
+<meta name="description" content="부부가 함께 쓰는 식자재 재고 관리">
+<title>우리집 식자재</title>
+<style>
+  /* ===== 기본 ===== */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #f4f5f3;
+    --card: #ffffff;
+    --accent: #2f9e6e;
+    --accent-dark: #248355;
+    --text: #1f2421;
+    --muted: #8a8f8a;
+    --border: #e7e9e5;
+    --danger: #e2574c;
+    --over: #e2574c;
+    --near: #e8902e;
+    --soon: #c9a31a;
+    --ok: #9aa09a;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+      "Noto Sans KR", "Malgun Gothic", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  body { overscroll-behavior-y: contain; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, select { font-family: inherit; font-size: 16px; }
+
+  /* ===== 앱 틀 ===== */
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    position: relative;
+    box-shadow: 0 0 40px rgba(0,0,0,0.05);
+  }
+
+  /* ===== 헤더 ===== */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--accent);
+    color: #fff;
+    padding: calc(env(safe-area-inset-top) + 14px) 16px 13px;
+  }
+  .hd-row { display: flex; align-items: center; justify-content: space-between; }
+  header .title { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+  header .sub { font-size: 12.5px; opacity: 0.85; margin-top: 3px; }
+  .acct {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.16);
+    border-radius: 999px; padding: 7px 12px 7px 10px;
+    color: #fff; flex-shrink: 0;
+  }
+  .acct:active { background: rgba(255,255,255,0.28); }
+  .acct svg { width: 17px; height: 17px; stroke: #fff; }
+  .sync-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #cdd2cd; box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
+  }
+  .sync-dot.on { background: #7be6a8; }
+
+  /* ===== 동기화 안내 배너 ===== */
+  .banner {
+    display: none;
+    background: #fdeede; color: #9a6a16;
+    font-size: 12.5px; font-weight: 600;
+    padding: 9px 16px; text-align: center;
+  }
+  .banner.show { display: block; }
+
+  /* ===== 정렬 바 ===== */
+  .sortbar {
+    position: sticky; top: 0; z-index: 15;
+    background: var(--bg);
+    padding: 12px 14px 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sort-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 9px 15px;
+    font-size: 14px; font-weight: 600;
+    color: var(--text);
+  }
+  .sort-btn .ico { width: 15px; height: 15px; stroke: var(--accent); }
+  .sort-btn .mode { color: var(--accent-dark); }
+  .sort-hint { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* ===== 목록 ===== */
+  .list { padding: 4px 14px 170px; }
+  .group-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    padding: 16px 4px 7px;
+  }
+  .group-head span {
+    background: var(--border); color: var(--muted);
+    border-radius: 999px; padding: 1px 8px; font-size: 11.5px;
+  }
+  .item {
+    display: flex; align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 12px 12px 15px;
+    margin-bottom: 9px;
+  }
+  .item.zero { opacity: 0.55; }
+  .item-main { flex: 1; min-width: 0; padding-right: 10px; }
+  .item-name {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .item.zero .item-name { text-decoration: line-through; }
+  .item-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip {
+    font-size: 11.5px; font-weight: 600;
+    background: #eef4f0; color: var(--accent-dark);
+    border-radius: 6px; padding: 2px 8px;
+  }
+  .badge {
+    font-size: 11.5px; font-weight: 700;
+    border-radius: 6px; padding: 2px 8px;
+  }
+  .exp-over { background: #fde9e7; color: var(--over); }
+  .exp-near { background: #fdeede; color: var(--near); }
+  .exp-soon { background: #f8f2d8; color: #9a7d10; }
+  .exp-ok   { background: #eef0ee; color: var(--ok); }
+
+  /* ===== 수량 조절 ===== */
+  .qty { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .qbtn {
+    width: 40px; height: 40px;
+    border-radius: 11px;
+    background: #eef4f0; color: var(--accent-dark);
+    font-size: 24px; font-weight: 500; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .qbtn:active { background: #d8e8e0; }
+  .qbtn.minus { color: var(--danger); background: #fdecea; }
+  .qbtn.minus:active { background: #f8d7d3; }
+  .qval {
+    min-width: 56px; height: 40px;
+    display: flex; align-items: baseline; justify-content: center; gap: 2px;
+    font-size: 18px; font-weight: 700;
+    border-radius: 9px;
+  }
+  .qval:active { background: var(--border); }
+  .qval .unit { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+
+  /* ===== 빈 상태 ===== */
+  .empty {
+    text-align: center; color: var(--muted);
+    padding: 70px 30px; font-size: 14px; line-height: 1.7;
+  }
+  .empty .big { font-size: 40px; margin-bottom: 10px; }
+
+  /* ===== 추가 버튼 (FAB) ===== */
+  .fab {
+    position: fixed; left: 50%; transform: translateX(calc(-50% + 150px));
+    bottom: calc(env(safe-area-inset-bottom) + 78px);
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 34px; font-weight: 300; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px rgba(47,158,110,0.45);
+    z-index: 25;
+  }
+  .fab:active { background: var(--accent-dark); }
+
+  /* ===== 하단 탭 ===== */
+  .tabbar {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: 0; width: 100%; max-width: 480px;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 30;
+  }
+  .tab {
+    flex: 1; padding: 9px 0 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--muted); font-size: 11.5px; font-weight: 600;
+  }
+  .tab svg { width: 23px; height: 23px; }
+  .tab.active { color: var(--accent); }
+  .tab .count {
+    position: absolute; transform: translate(16px,-4px);
+    background: var(--danger); color: #fff;
+    font-size: 10px; font-weight: 700;
+    min-width: 16px; height: 16px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px;
+  }
+
+  /* ===== 장보기 ===== */
+  .shop-add {
+    display: flex; gap: 8px;
+    padding: 14px 14px 6px;
+  }
+  .shop-add input {
+    flex: 1; border: 1px solid var(--border); background: var(--card);
+    border-radius: 11px; padding: 12px 14px; font-size: 15px;
+  }
+  .shop-add button {
+    background: var(--accent); color: #fff;
+    border-radius: 11px; padding: 0 18px;
+    font-size: 15px; font-weight: 700;
+  }
+  .shop-item {
+    display: flex; align-items: center; gap: 11px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 13px; padding: 12px 13px; margin-bottom: 9px;
+  }
+  .check {
+    width: 26px; height: 26px; flex-shrink: 0;
+    border: 2px solid var(--border); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .check.on { background: var(--accent); border-color: var(--accent); }
+  .check svg { width: 15px; height: 15px; stroke: #fff; stroke-width: 3.5; display: none; }
+  .check.on svg { display: block; }
+  .shop-name { flex: 1; font-size: 15.5px; font-weight: 600; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shop-item.done .shop-name { text-decoration: line-through; color: var(--muted); }
+  .mini-btn {
+    font-size: 12.5px; font-weight: 700;
+    border: 1px solid var(--accent); color: var(--accent-dark);
+    border-radius: 8px; padding: 6px 9px; flex-shrink: 0;
+  }
+  .mini-btn:active { background: #eef4f0; }
+  .del-btn { color: var(--muted); font-size: 22px; padding: 0 4px; flex-shrink: 0; }
+
+  /* ===== 모달 공통 ===== */
+  .backdrop {
+    position: fixed; inset: 0; z-index: 40;
+    background: rgba(20,24,21,0.45);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .backdrop.show { display: flex; }
+  .backdrop.center { align-items: center; }
+  .sheet {
+    background: var(--card);
+    width: 100%; max-width: 480px;
+    border-radius: 22px 22px 0 0;
+    padding: 8px 20px calc(env(safe-area-inset-bottom) + 22px);
+    max-height: 92vh; overflow-y: auto;
+  }
+  .sheet .grip { width: 38px; height: 4px; border-radius: 99px;
+    background: var(--border); margin: 8px auto 14px; }
+  .sheet-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700;
+    color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; border: 1px solid var(--border); background: #fafbfa;
+    border-radius: 11px; padding: 12px 13px;
+  }
+  .qrow { display: flex; align-items: center; gap: 8px; }
+  .qrow .stepper { display: flex; align-items: center; gap: 6px; }
+  .qrow .stepper button {
+    width: 42px; height: 46px; border-radius: 11px;
+    background: #eef4f0; color: var(--accent-dark); font-size: 24px;
+  }
+  .qrow .stepper button.minus { background: #fdecea; color: var(--danger); }
+  .qrow input.qnum { width: 64px; text-align: center; font-weight: 700; font-size: 18px; }
+  .qrow select.unitsel { flex: 1; }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn {
+    flex: 1; border-radius: 13px; padding: 15px 0;
+    font-size: 16px; font-weight: 700;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:active { background: var(--accent-dark); }
+  .btn-ghost { background: #f0f1ef; color: var(--text); flex: 0 0 92px; }
+  .btn-danger { background: #fdecea; color: var(--danger); flex: 0 0 92px; }
+
+  /* ===== 수량 빠른 모달 ===== */
+  .modal {
+    background: var(--card); border-radius: 20px;
+    padding: 22px 22px 20px; width: 86%; max-width: 320px;
+    text-align: center;
+  }
+  .modal .mname { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .modal .msub { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }
+  .modal .mctrl { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .modal .mctrl button {
+    width: 54px; height: 54px; border-radius: 14px;
+    background: #eef4f0; color: var(--accent-dark); font-size: 30px;
+  }
+  .modal .mctrl button.minus { background: #fdecea; color: var(--danger); }
+  .modal .mctrl input {
+    width: 86px; text-align: center; font-size: 30px; font-weight: 800;
+    border: none; border-bottom: 2px solid var(--border); padding: 4px 0;
+  }
+  .modal .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+
+  /* ===== 스플래시 ===== */
+  .splash {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--accent); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  }
+  .splash .logo { font-size: 23px; font-weight: 800; letter-spacing: -0.5px; }
+  .spinner {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.35); border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== 로그인 ===== */
+  .login {
+    position: fixed; inset: 0; z-index: 90;
+    background: var(--bg);
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center; padding: 28px;
+  }
+  .login.show { display: flex; }
+  .login-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 22px; padding: 28px 22px 24px;
+    width: 100%; max-width: 380px;
+  }
+  .login-logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .login-logo .leaf { color: var(--accent); }
+  .login-h { font-size: 15px; font-weight: 700; margin: 18px 0 4px; }
+  .login-desc { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+  .login input {
+    width: 100%; border: 1px solid var(--border); background: #fafbfa;
+    border-radius: 12px; padding: 13px 14px; margin-bottom: 10px;
+  }
+  .login .primary {
+    width: 100%; background: var(--accent); color: #fff;
+    border-radius: 13px; padding: 14px 0; font-size: 16px; font-weight: 700;
+    margin-top: 4px;
+  }
+  .login .primary:active { background: var(--accent-dark); }
+  .login .primary:disabled { opacity: 0.6; }
+  .login .toggle {
+    display: block; width: 100%; text-align: center;
+    margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--accent-dark);
+  }
+  .login .err {
+    display: none;
+    background: #fde9e7; color: var(--danger);
+    font-size: 12.5px; font-weight: 600; line-height: 1.5;
+    border-radius: 10px; padding: 9px 12px; margin-bottom: 4px;
+  }
+  .login .err.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ===== 스플래시 ===== -->
+<div class="splash" id="splash">
+  <div class="logo">우리집 식자재</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- ===== 로그인 ===== -->
+<div class="login" id="login">
+  <div class="login-card">
+    <div class="login-logo"><span class="leaf">●</span> 우리집 식자재</div>
+    <div class="login-h" id="loginH">로그인</div>
+    <div class="login-desc" id="loginDesc">
+      두 분이 각자 이메일과 비밀번호로 한 번만 가입하시면,
+      같은 식자재 목록을 함께 쓰게 됩니다.
+    </div>
+    <div class="err" id="loginErr"></div>
+    <input id="loginEmail" type="email" placeholder="이메일" autocomplete="email" enterkeyhint="next">
+    <input id="loginPw" type="password" placeholder="비밀번호 (6자리 이상)" autocomplete="current-password" enterkeyhint="done">
+    <button class="primary" id="loginBtn">로그인</button>
+    <button class="toggle" id="loginToggle">처음이신가요? &nbsp;회원가입 →</button>
+  </div>
+</div>
+
+<!-- ===== 앱 ===== -->
+<div class="app" id="app" style="display:none">
+
+  <header>
+    <div class="hd-row">
+      <div class="hd-text">
+        <div class="title">우리집 식자재</div>
+        <div class="sub" id="hd-sub">재고를 불러오는 중…</div>
+      </div>
+      <button class="acct" id="acctBtn" aria-label="계정">
+        <span class="sync-dot" id="syncDot"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <!-- ===== 재고 화면 ===== -->
+  <main id="view-inventory">
+    <div class="sortbar">
+      <button class="sort-btn" id="sortBtn">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h13M3 12h9M3 18h5"/><path d="M18 9l3-3 3 3M21 6v12"/>
+        </svg>
+        정렬 · <span class="mode" id="sortMode">최근 추가순</span>
+      </button>
+      <span class="sort-hint">탭하여 전환</span>
+    </div>
+    <div class="list" id="inv-list"></div>
+  </main>
+
+  <!-- ===== 장보기 화면 ===== -->
+  <main id="view-shopping" style="display:none">
+    <div class="shop-add">
+      <input id="shopInput" type="text" placeholder="무엇을 살까요?" enterkeyhint="done">
+      <button id="shopAddBtn">추가</button>
+    </div>
+    <div class="list" id="shop-list"></div>
+  </main>
+
+  <!-- 추가 버튼 -->
+  <button class="fab" id="fab" aria-label="식자재 추가">+</button>
+
+  <!-- 하단 탭 -->
+  <nav class="tabbar">
+    <button class="tab active" id="tab-inv">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/>
+      </svg>
+      재고
+    </button>
+    <button class="tab" id="tab-shop">
+      <span style="position:relative">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h2l2.4 12.2a2 2 0 002 1.8h8.7a2 2 0 002-1.6L23 7H6"/>
+          <circle cx="9" cy="21" r="1.4"/><circle cx="18" cy="21" r="1.4"/>
+        </svg>
+        <span class="count" id="shopCount" style="display:none">0</span>
+      </span>
+      장보기
+    </button>
+  </nav>
+</div>
+
+<!-- ===== 추가 / 수정 시트 ===== -->
+<div class="backdrop" id="sheet">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="sheet-title" id="sheetTitle">새 식자재</div>
+    <div class="field">
+      <label>이름</label>
+      <input id="f-name" type="text" placeholder="예: 양파" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>분류</label>
+      <select id="f-cat"></select>
+    </div>
+    <div class="field">
+      <label>수량</label>
+      <div class="qrow">
+        <div class="stepper">
+          <button class="minus" id="f-minus">−</button>
+          <input class="qnum" id="f-qty" type="number" inputmode="numeric" value="1" min="0">
+          <button id="f-plus">+</button>
+        </div>
+        <select class="unitsel" id="f-unit"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>유통기한 (선택)</label>
+      <input id="f-expiry" type="date">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="f-cancel">취소</button>
+      <button class="btn btn-danger" id="f-delete" style="display:none">삭제</button>
+      <button class="btn btn-primary" id="f-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 수량 빠른 조절 모달 ===== -->
+<div class="backdrop center" id="qtyModal">
+  <div class="modal">
+    <div class="mname" id="qm-name"></div>
+    <div class="msub" id="qm-sub">수량을 입력하세요</div>
+    <div class="mctrl">
+      <button class="minus" id="qm-minus">−</button>
+      <input id="qm-input" type="number" inputmode="numeric" min="0">
+      <button id="qm-plus">+</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="qm-cancel" style="flex:1">취소</button>
+      <button class="btn btn-primary" id="qm-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* =========================================================
+   우리집 식자재  ·  2단계 (클라우드 실시간 공유)
+   식자재 데이터는 Firebase 클라우드에 저장되어,
+   부부 두 사람이 어느 기기에서든 같은 목록을 함께 봅니다.
+   ========================================================= */
+
+/* ==FIREBASE-START== (이 구간은 Firebase 연결 설정입니다) */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+import {
+  getDatabase, ref, onValue, set
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyArmdO-xHFqu5IuZDLFv-y9Yo4nsiOBWLs",
+  authDomain: "foody-80509.firebaseapp.com",
+  databaseURL: "https://foody-80509-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "foody-80509",
+  storageBucket: "foody-80509.firebasestorage.app",
+  messagingSenderId: "197263401214",
+  appId: "1:197263401214:web:a502293f296c11707205af"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getDatabase(fbApp);
+/* ==FIREBASE-END== */
+
+/* ---------- 도우미 ---------- */
+const $  = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const normArr = (x) => Array.isArray(x) ? x.filter(v => v != null)
+  : (x && typeof x === 'object' ? Object.values(x) : []);
+
+/* ---------- 기본값 ---------- */
+const DEFAULT_CATEGORIES = ['야채','과일','고기·생선','유제품·계란','냉동식품','양념·소스','곡물·면','음료','기타'];
+const UNITS = ['개','g','kg','ml','L','봉지','팩','묶음','통','병','캔','조각','마리','모'];
+const SORT_MODES = [
+  { key: 'recent',   label: '최근 추가순' },
+  { key: 'name',     label: '이름순' },
+  { key: 'expiry',   label: '유통기한 임박순' },
+  { key: 'category', label: '카테고리별' },
+];
+
+/* ---------- 상태 ---------- */
+let state = {
+  inventory: [],   // {id,name,category,qty,unit,expiry,addedAt}
+  shopping: [],    // {id,name,done,addedAt}
+  categories: [...DEFAULT_CATEGORIES],
+  sortMode: 'recent',   // 정렬은 개인 취향 → 이 기기에만 저장 (공유 안 함)
+};
+
+/* =========================================================
+   클라우드 동기화 계층
+   - pushToCloud(): 내 변경을 클라우드에 올림
+   - applyCloud():  클라우드(=상대방 포함)의 최신 내용을 받아 화면 갱신
+   ========================================================= */
+let lastSnapshot = null;   // 내 쓰기의 '메아리'를 걸러내기 위한 비교용
+const snapStr = (inv, shop, cats) => JSON.stringify([inv, shop, cats]);
+
+function pushToCloud() {
+  lastSnapshot = snapStr(state.inventory, state.shopping, state.categories);
+  set(ref(db, 'household'), {
+    inventory: state.inventory,
+    shopping: state.shopping,
+    categories: state.categories,
+    updatedAt: Date.now(),
+  }).then(() => {
+    hideBanner();
+  }).catch((err) => {
+    console.warn('저장 실패:', err);
+    showBanner('저장 중 문제가 생겼어요. 인터넷 연결을 확인해 주세요.');
+  });
+}
+
+function applyCloud(data) {
+  data = data || {};
+  const inv  = normArr(data.inventory);
+  const shop = normArr(data.shopping);
+  const cats = normArr(data.categories);
+  const s = snapStr(inv, shop, cats);
+  if (s === lastSnapshot) return;   // 변화 없음 (내가 방금 올린 것의 메아리)
+  lastSnapshot = s;
+  state.inventory  = inv;
+  state.shopping   = shop;
+  state.categories = cats.length ? cats : [...DEFAULT_CATEGORIES];
+  renderAll();
+}
+
+/* ---------- 동기화 시작 ---------- */
+let syncStarted = false;
+function startSync() {
+  if (syncStarted) return;
+  syncStarted = true;
+
+  // 연결 상태 표시
+  onValue(ref(db, '.info/connected'), (snap) => {
+    $('#syncDot').classList.toggle('on', snap.val() === true);
+  });
+
+  // 식자재/장보기 데이터 실시간 수신
+  onValue(ref(db, 'household'), (snap) => {
+    applyCloud(snap.val());
+    revealApp();
+  }, (err) => {
+    console.warn('동기화 오류:', err);
+    revealApp();
+    if (String(err && err.code).includes('PERMISSION_DENIED') ||
+        String(err).includes('permission')) {
+      showBanner('데이터베이스 보안 규칙 설정이 필요합니다.');
+    } else {
+      showBanner('동기화에 문제가 있어요. 인터넷 연결을 확인해 주세요.');
+    }
+  });
+
+  // 혹시 응답이 늦어도 6초 뒤엔 앱을 보여줌
+  setTimeout(revealApp, 6000);
+}
+
+/* ---------- 안내 배너 ---------- */
+function showBanner(msg) { const b = $('#banner'); b.textContent = msg; b.classList.add('show'); }
+function hideBanner()    { $('#banner').classList.remove('show'); }
+
+/* =========================================================
+   유통기한 계산
+   ========================================================= */
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return null;
+  return Math.round((d - today) / 86400000);
+}
+function expiryInfo(dateStr) {
+  const n = daysUntil(dateStr);
+  if (n === null) return null;
+  if (n < 0)   return { cls: 'exp-over', text: (n === -1 ? '어제 지남' : (-n) + '일 지남') };
+  if (n === 0) return { cls: 'exp-over', text: '오늘까지' };
+  if (n <= 3)  return { cls: 'exp-near', text: 'D-' + n };
+  if (n <= 7)  return { cls: 'exp-soon', text: 'D-' + n };
+  return { cls: 'exp-ok', text: 'D-' + n };
+}
+
+/* =========================================================
+   화면 그리기
+   ========================================================= */
+function renderHeader() {
+  const n = state.inventory.length;
+  const soon = state.inventory.filter(it => {
+    const d = daysUntil(it.expiry);
+    return d !== null && d <= 3;
+  }).length;
+  $('#hd-sub').textContent = n === 0
+    ? '아직 등록된 식자재가 없어요'
+    : `총 ${n}종` + (soon ? ` · 유통기한 임박 ${soon}개` : '');
+}
+
+function itemCardHTML(it) {
+  const exp = expiryInfo(it.expiry);
+  const badge = exp ? `<span class="badge ${exp.cls}">${esc(exp.text)}</span>` : '';
+  return `<div class="item${it.qty <= 0 ? ' zero' : ''}" data-id="${it.id}">
+    <div class="item-main" data-act="edit" data-id="${it.id}">
+      <div class="item-name">${esc(it.name)}</div>
+      <div class="item-meta">
+        <span class="chip">${esc(it.category)}</span>${badge}
+      </div>
+    </div>
+    <div class="qty">
+      <button class="qbtn minus" data-act="dec" data-id="${it.id}" aria-label="감소">−</button>
+      <button class="qval" data-act="qty" data-id="${it.id}">${it.qty}<span class="unit">${esc(it.unit)}</span></button>
+      <button class="qbtn plus" data-act="inc" data-id="${it.id}" aria-label="증가">+</button>
+    </div>
+  </div>`;
+}
+
+function renderInventory() {
+  const box = $('#inv-list');
+  const items = [...state.inventory];
+
+  if (items.length === 0) {
+    box.innerHTML = `<div class="empty"><div class="big">·</div>
+      아직 등록된 식자재가 없어요.<br>오른쪽 아래 <b>+</b> 버튼으로 추가해 보세요.</div>`;
+    return;
+  }
+
+  const mode = state.sortMode;
+  if (mode === 'name') {
+    items.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  } else if (mode === 'recent') {
+    items.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+  } else if (mode === 'expiry') {
+    items.sort((a, b) => {
+      const da = daysUntil(a.expiry), db2 = daysUntil(b.expiry);
+      if (da === null && db2 === null) return (b.addedAt || 0) - (a.addedAt || 0);
+      if (da === null) return 1;
+      if (db2 === null) return -1;
+      return da - db2;
+    });
+  }
+
+  if (mode === 'category') {
+    const groups = {};
+    items.forEach(it => { (groups[it.category] = groups[it.category] || []).push(it); });
+    const order = [...state.categories];
+    Object.keys(groups).forEach(c => { if (!order.includes(c)) order.push(c); });
+    let html = '';
+    order.forEach(cat => {
+      const g = groups[cat];
+      if (!g) return;
+      g.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      html += `<div class="group-head">${esc(cat)}<span>${g.length}</span></div>`;
+      html += g.map(itemCardHTML).join('');
+    });
+    box.innerHTML = html;
+  } else {
+    box.innerHTML = items.map(itemCardHTML).join('');
+  }
+}
+
+function renderShopping() {
+  const box = $('#shop-list');
+  if (state.shopping.length === 0) {
+    box.innerHTML = `<div class="empty"><div class="big">·</div>
+      장보기 목록이 비어 있어요.<br>위 칸에 살 것을 적어 추가해 보세요.</div>`;
+  } else {
+    const list = [...state.shopping].sort((a, b) => {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      return (b.addedAt || 0) - (a.addedAt || 0);
+    });
+    box.innerHTML = list.map(s => `
+      <div class="shop-item${s.done ? ' done' : ''}" data-id="${s.id}">
+        <div class="check${s.done ? ' on' : ''}" data-act="toggle" data-id="${s.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12l5 5L20 6"/></svg>
+        </div>
+        <div class="shop-name">${esc(s.name)}</div>
+        <button class="mini-btn" data-act="tostock" data-id="${s.id}">재고에 추가</button>
+        <button class="del-btn" data-act="shopdel" data-id="${s.id}" aria-label="삭제">×</button>
+      </div>`).join('');
+  }
+  const c = state.shopping.filter(s => !s.done).length;
+  const badge = $('#shopCount');
+  badge.style.display = c ? 'flex' : 'none';
+  badge.textContent = c;
+}
+
+function renderAll() {
+  renderHeader();
+  renderInventory();
+  renderShopping();
+  $('#sortMode').textContent = (SORT_MODES.find(m => m.key === state.sortMode) || SORT_MODES[0]).label;
+}
+
+/* =========================================================
+   재고 동작  (모든 변경은 pushToCloud()로 클라우드에 반영)
+   ========================================================= */
+function changeQty(id, delta) {
+  const it = state.inventory.find(x => x.id === id);
+  if (!it) return;
+  it.qty = Math.max(0, (it.qty || 0) + delta);
+  // 화면을 통째로 다시 그리지 않고 해당 항목만 갱신 (빠른 반응)
+  const el = document.querySelector(`.item[data-id="${id}"]`);
+  if (el) {
+    el.classList.toggle('zero', it.qty <= 0);
+    el.querySelector('.qval').innerHTML = it.qty + `<span class="unit">${esc(it.unit)}</span>`;
+  } else {
+    renderInventory();
+  }
+  renderHeader();
+  pushToCloud();
+}
+
+/* =========================================================
+   추가 / 수정 시트
+   ========================================================= */
+let sheetMode = 'add';
+let editingId = null;
+let fromShoppingId = null;
+
+function buildCatSelect(selected) {
+  const sel = $('#f-cat');
+  sel.innerHTML =
+    state.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') +
+    `<option value="__new__">+ 새 분류 추가…</option>`;
+  sel.value = state.categories.includes(selected) ? selected : state.categories[0];
+}
+function buildUnitSelect(selected) {
+  const sel = $('#f-unit');
+  const units = (UNITS.includes(selected) || !selected) ? UNITS : [selected, ...UNITS];
+  sel.innerHTML = units.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('');
+  sel.value = selected || '개';
+}
+
+function openSheet(mode, item) {
+  sheetMode = mode;
+  editingId = item ? item.id : null;
+  $('#sheetTitle').textContent = mode === 'edit' ? '식자재 수정' : '새 식자재';
+  $('#f-delete').style.display = mode === 'edit' ? '' : 'none';
+  $('#f-name').value   = item ? item.name : '';
+  buildCatSelect(item ? item.category : state.categories[0]);
+  buildUnitSelect(item ? item.unit : '개');
+  $('#f-qty').value    = item ? item.qty : 1;
+  $('#f-expiry').value = item ? (item.expiry || '') : '';
+  $('#sheet').classList.add('show');
+}
+function closeSheet() {
+  $('#sheet').classList.remove('show');
+  fromShoppingId = null;
+}
+
+function saveSheet() {
+  const name = $('#f-name').value.trim();
+  if (!name) { $('#f-name').focus(); return; }
+  const category = $('#f-cat').value === '__new__' ? state.categories[0] : $('#f-cat').value;
+  let qty = parseInt($('#f-qty').value, 10);
+  if (isNaN(qty) || qty < 0) qty = 0;
+  const unit = $('#f-unit').value;
+  const expiry = $('#f-expiry').value || '';
+
+  if (sheetMode === 'edit') {
+    const it = state.inventory.find(x => x.id === editingId);
+    if (it) Object.assign(it, { name, category, qty, unit, expiry });
+  } else {
+    const dup = state.inventory.find(x => x.name.trim() === name && x.unit === unit);
+    if (dup && confirm(`이미 '${name}'(이/가) 있어요.\n기존 항목에 ${qty}${unit}을(를) 더할까요?`)) {
+      dup.qty = (dup.qty || 0) + qty;
+      if (expiry) dup.expiry = expiry;
+    } else {
+      state.inventory.push({ id: uid(), name, category, qty, unit, expiry, addedAt: Date.now() });
+    }
+    if (fromShoppingId) {
+      state.shopping = state.shopping.filter(s => s.id !== fromShoppingId);
+    }
+  }
+  closeSheet();
+  renderAll();
+  pushToCloud();
+}
+
+function deleteItem() {
+  const it = state.inventory.find(x => x.id === editingId);
+  if (it && confirm(`'${it.name}'을(를) 목록에서 삭제할까요?`)) {
+    state.inventory = state.inventory.filter(x => x.id !== editingId);
+    closeSheet();
+    renderAll();
+    pushToCloud();
+  }
+}
+
+$('#f-cat').addEventListener('change', (e) => {
+  if (e.target.value !== '__new__') return;
+  const name = (prompt('새 분류 이름을 입력하세요') || '').trim();
+  if (name && !state.categories.includes(name)) {
+    state.categories.push(name);
+    pushToCloud();
+  }
+  buildCatSelect(name || state.categories[0]);
+});
+
+/* =========================================================
+   수량 빠른 조절 모달
+   ========================================================= */
+let qtyEditId = null;
+function openQtyModal(id) {
+  const it = state.inventory.find(x => x.id === id);
+  if (!it) return;
+  qtyEditId = id;
+  $('#qm-name').textContent = it.name;
+  $('#qm-sub').textContent = `단위: ${it.unit}`;
+  $('#qm-input').value = it.qty;
+  $('#qtyModal').classList.add('show');
+}
+function closeQtyModal() { $('#qtyModal').classList.remove('show'); qtyEditId = null; }
+function saveQtyModal() {
+  const it = state.inventory.find(x => x.id === qtyEditId);
+  if (it) {
+    let v = parseInt($('#qm-input').value, 10);
+    if (isNaN(v) || v < 0) v = 0;
+    it.qty = v;
+    renderInventory();
+    renderHeader();
+    pushToCloud();
+  }
+  closeQtyModal();
+}
+
+/* =========================================================
+   탭 / 정렬 / 장보기
+   ========================================================= */
+$('#sortBtn').addEventListener('click', () => {
+  const i = SORT_MODES.findIndex(m => m.key === state.sortMode);
+  state.sortMode = SORT_MODES[(i + 1) % SORT_MODES.length].key;
+  try { localStorage.setItem('foody_sort', state.sortMode); } catch (e) {}
+  $('#sortMode').textContent = SORT_MODES.find(m => m.key === state.sortMode).label;
+  renderInventory();
+});
+
+$('#inv-list').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]');
+  if (!t) return;
+  const id = t.dataset.id, act = t.dataset.act;
+  if (act === 'inc')  changeQty(id, +1);
+  else if (act === 'dec')  changeQty(id, -1);
+  else if (act === 'qty')  openQtyModal(id);
+  else if (act === 'edit') {
+    const it = state.inventory.find(x => x.id === id);
+    if (it) openSheet('edit', it);
+  }
+});
+
+$('#fab').addEventListener('click', () => openSheet('add', null));
+$('#f-save').addEventListener('click', saveSheet);
+$('#f-cancel').addEventListener('click', closeSheet);
+$('#f-delete').addEventListener('click', deleteItem);
+$('#f-minus').addEventListener('click', () => {
+  $('#f-qty').value = Math.max(0, (parseInt($('#f-qty').value, 10) || 0) - 1);
+});
+$('#f-plus').addEventListener('click', () => {
+  $('#f-qty').value = (parseInt($('#f-qty').value, 10) || 0) + 1;
+});
+$('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
+
+$('#qm-minus').addEventListener('click', () => {
+  $('#qm-input').value = Math.max(0, (parseInt($('#qm-input').value, 10) || 0) - 1);
+});
+$('#qm-plus').addEventListener('click', () => {
+  $('#qm-input').value = (parseInt($('#qm-input').value, 10) || 0) + 1;
+});
+$('#qm-save').addEventListener('click', saveQtyModal);
+$('#qm-cancel').addEventListener('click', closeQtyModal);
+$('#qtyModal').addEventListener('click', (e) => { if (e.target.id === 'qtyModal') closeQtyModal(); });
+
+function switchView(view) {
+  const inv = view === 'inventory';
+  $('#view-inventory').style.display = inv ? '' : 'none';
+  $('#view-shopping').style.display  = inv ? 'none' : '';
+  $('#fab').style.display = inv ? 'flex' : 'none';
+  $('#tab-inv').classList.toggle('active', inv);
+  $('#tab-shop').classList.toggle('active', !inv);
+}
+$('#tab-inv').addEventListener('click', () => switchView('inventory'));
+$('#tab-shop').addEventListener('click', () => switchView('shopping'));
+
+function addShopItem() {
+  const inp = $('#shopInput');
+  const name = inp.value.trim();
+  if (!name) return;
+  state.shopping.push({ id: uid(), name, done: false, addedAt: Date.now() });
+  inp.value = '';
+  renderShopping();
+  pushToCloud();
+}
+$('#shopAddBtn').addEventListener('click', addShopItem);
+$('#shopInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') addShopItem(); });
+
+$('#shop-list').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]');
+  if (!t) return;
+  const id = t.dataset.id, act = t.dataset.act;
+  const s = state.shopping.find(x => x.id === id);
+  if (!s) return;
+  if (act === 'toggle') {
+    s.done = !s.done;
+    renderShopping();
+    pushToCloud();
+  } else if (act === 'shopdel') {
+    state.shopping = state.shopping.filter(x => x.id !== id);
+    renderShopping();
+    pushToCloud();
+  } else if (act === 'tostock') {
+    fromShoppingId = id;
+    openSheet('add', null);
+    $('#f-name').value = s.name;
+  }
+});
+
+/* =========================================================
+   로그인 / 인증
+   ========================================================= */
+let authMode = 'login';   // 'login' | 'signup'
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const signup = mode === 'signup';
+  $('#loginH').textContent      = signup ? '회원가입' : '로그인';
+  $('#loginBtn').textContent    = signup ? '회원가입' : '로그인';
+  $('#loginToggle').innerHTML   = signup
+    ? '이미 계정이 있어요 &nbsp;· 로그인'
+    : '처음이신가요? &nbsp;회원가입 →';
+  $('#loginPw').autocomplete    = signup ? 'new-password' : 'current-password';
+  hideLoginErr();
+}
+function showLoginErr(msg) { const e = $('#loginErr'); e.textContent = msg; e.classList.add('show'); }
+function hideLoginErr()    { $('#loginErr').classList.remove('show'); }
+
+const AUTH_ERR = {
+  'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
+  'auth/missing-password': '비밀번호를 입력해 주세요.',
+  'auth/weak-password': '비밀번호는 6자리 이상이어야 합니다.',
+  'auth/email-already-in-use': '이미 가입된 이메일입니다. 로그인해 주세요.',
+  'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
+  'auth/wrong-password': '이메일 또는 비밀번호가 올바르지 않습니다.',
+  'auth/user-not-found': '가입되지 않은 이메일입니다. 먼저 회원가입해 주세요.',
+  'auth/network-request-failed': '인터넷 연결을 확인해 주세요.',
+  'auth/too-many-requests': '시도가 많습니다. 잠시 후 다시 시도해 주세요.',
+};
+
+async function doAuth() {
+  const email = $('#loginEmail').value.trim();
+  const pw = $('#loginPw').value;
+  if (!email || !pw) { showLoginErr('이메일과 비밀번호를 모두 입력해 주세요.'); return; }
+  if (authMode === 'signup' && pw.length < 6) {
+    showLoginErr('비밀번호는 6자리 이상이어야 합니다.'); return;
+  }
+  hideLoginErr();
+  const btn = $('#loginBtn');
+  btn.disabled = true;
+  btn.textContent = '잠시만요…';
+  try {
+    if (authMode === 'signup') {
+      await createUserWithEmailAndPassword(auth, email, pw);
+    } else {
+      await signInWithEmailAndPassword(auth, email, pw);
+    }
+    // 성공하면 onAuthStateChanged 가 화면을 전환합니다.
+  } catch (err) {
+    const code = (err && err.code) || '';
+    showLoginErr(AUTH_ERR[code] || ('로그인 오류: ' + code));
+    btn.disabled = false;
+    btn.textContent = authMode === 'signup' ? '회원가입' : '로그인';
+  }
+}
+
+$('#loginBtn').addEventListener('click', doAuth);
+$('#loginToggle').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'signup' : 'login'));
+$('#loginPw').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAuth(); });
+$('#loginEmail').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#loginPw').focus(); });
+
+$('#acctBtn').addEventListener('click', () => {
+  const who = (auth.currentUser && auth.currentUser.email) || '';
+  if (confirm(`${who}\n로그아웃 할까요?`)) signOut(auth);
+});
+
+/* =========================================================
+   화면 노출 / 시작
+   ========================================================= */
+let appRevealed = false;
+function revealApp() {
+  if (appRevealed) return;
+  appRevealed = true;
+  $('#splash').style.display = 'none';
+  $('#login').classList.remove('show');
+  $('#app').style.display = '';
+  switchView('inventory');
+  renderAll();
+}
+function showLogin() {
+  $('#splash').style.display = 'none';
+  $('#app').style.display = 'none';
+  $('#login').classList.add('show');
+}
+
+// 정렬 설정(개인 취향)은 이 기기에만 저장
+try { state.sortMode = localStorage.getItem('foody_sort') || 'recent'; } catch (e) {}
+setAuthMode('login');
+
+// 로그인 상태가 유지되도록 설정
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+// 로그인 상태 감시 — 이 앱의 시작점
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    hideLoginErr();
+    $('#loginBtn').disabled = false;
+    $('#loginBtn').textContent = authMode === 'signup' ? '회원가입' : '로그인';
+    startSync();
+  } else {
+    appRevealed = false;
+    showLogin();
+  }
+});
+</script>
+</body>
+</html>
